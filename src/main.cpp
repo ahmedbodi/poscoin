@@ -40,8 +40,8 @@ CTxMemPool mempool;
 unsigned int nTransactionsUpdated = 0;
 
 map<uint256, CBlockIndex*> mapBlockIndex;
-uint256 hashGenesisBlock("0xb868e0d95a3c3c0e0dadc67ee587aaf9dc8acbf99e3b4b3110fad4eb74c1decc");
-uint256 hashGenesisBlockTestNet("0x46db8d519c64586e3f0bf16153f61fdcf1d30b71ab159bf4a5b46dbcbc79d814");
+uint256 hashGenesisBlock("0xffb48fa2620606ed9d8b15f03676767bb6cd353796799acd8d91e64738082e41");
+uint256 hashGenesisBlockTestNet("0x0");
 static CBigNum bnProofOfWorkLimit(~uint256(0) >> 20); // Reddcoin: starting difficulty is 1 / 2^12
 CBlockIndex* pindexGenesisBlock = NULL;
 int nBestHeight = -1;
@@ -89,8 +89,8 @@ set<pair<COutPoint, unsigned int> > setStakeSeenOrphan;
 static CBigNum bnProofOfStakeLimit(~uint256(0) >> 20);
 static CBigNum bnProofOfStakeReset(~uint256(0) >> 32); // 1
 int64 nReserveBalance = 0;
-unsigned int nStakeMinAge = 8 * 60 * 60; // 8 hours
-unsigned int nStakeMaxAge = 45 * 24 *  60 * 60; // 45 days
+unsigned int nStakeMinAge = 1 * 60 * 10; // 10 minutes for testing
+unsigned int nStakeMaxAge = -1;
 extern enum Checkpoints::CPMode CheckpointsMode;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -967,7 +967,7 @@ int CMerkleTx::GetBlocksToMaturity() const
 {
     if (!(IsCoinBase() || IsCoinStake()))
         return 0;
-    return max(0, (COINBASE_MATURITY+20) - GetDepthInMainChain());
+    return max(0, (COINBASE_MATURITY) - GetDepthInMainChain());
 }
 
 
@@ -1118,27 +1118,10 @@ uint256 WantedByOrphan(const CBlock* pblockOrphan)
 
 int64 GetBlockValue(int nHeight, int64 nFees)
 {
-    int64 nSubsidy = 100000 * COIN;
+    int64 nSubsidy = 0;
 
-    if (nHeight == 0) {
-        // Genesis block
-        nSubsidy = 10000 * COIN;
-    } else if (nHeight < 11) {
-        // Premine: First 10 block are 545,000,000 RDD (5% of the total coin)
-        nSubsidy = 545000000 * COIN;
-    } else if (nHeight < 10000) {
-        // Bonus reward for block 10-9,999 of 300,000 coins
-        nSubsidy = 300000 * COIN;
-    } else if (nHeight < 20000) {
-        // Bonus reward for block 10,000 - 19,999 of 200,000 coins
-        nSubsidy = 200000 * COIN;
-    } else if (nHeight < 30000) {
-        // Bonus reward for block 20,000 - 29,999 of 150,000 coins
-        nSubsidy = 150000 * COIN;
-    } else if (nHeight >= 140000) {
-      // Subsidy is cut in half every 50,000 blocks starting at block 140000
-      nSubsidy >>= ((nHeight - 140000 + 50000) / 50000);
-    }
+    if (nHeight == 1)
+        nSubsidy = 100000 * COIN;
 
     return nSubsidy + nFees;
 }
@@ -2222,12 +2205,11 @@ bool CTransaction::GetCoinAge(uint64& nCoinAge) const
             return false;  // Transaction timestamp violation
 
         int64 nValueIn = txPrev.vout[txin.prevout.n].nValue;
-        int64 nTimeWeight = GetCoinAgeWeight(txPrev.nTime, nTime);
-        bnCentSecond += CBigNum(nValueIn) * nTimeWeight / CENT;
+        bnCentSecond += CBigNum(nValueIn) * (nTime-txPrev.nTime) / CENT;
 
-        if (fDebug && GetBoolArg("-printcoinage"))
-            printf("coin age nValueIn=%"PRI64d" nTime=%d, txPrev.nTime=%d, nTimeWeight=%"PRI64d" bnCentSecond=%s\n",
-                nValueIn, nTime, txPrev.nTime, nTimeWeight, bnCentSecond.ToString().c_str());
+
+	if (fDebug && GetBoolArg("-printcoinage"))
+            printf("coin age nValueIn=%" PRId64 " nTimeDiff=%d bnCentSecond=%s\n", nValueIn, nTime - txPrev.nTime, bnCentSecond.ToString().c_str());
     }
 
     CBigNum bnCoinDay = bnCentSecond * CENT / COIN / (24 * 60 * 60);
@@ -2435,8 +2417,8 @@ bool CBlock::CheckBlock(CValidationState &state, bool fCheckPOW, bool fCheckMerk
         return state.DoS(100, error("CheckBlock() : size limits failed"));
 
     // Check proof of work matches claimed amount
-    if (GetBlockTime() > CHECK_POW_FROM_NTIME && fCheckPOW && IsProofOfWork() && !CheckProofOfWork(GetPoWHash(), nBits))
-        return state.DoS(50, error("CheckBlock() : proof of work failed"));
+    //if (GetBlockTime() > CHECK_POW_FROM_NTIME && fCheckPOW && IsProofOfWork() && !CheckProofOfWork(GetPoWHash(), nBits))
+        //return state.DoS(50, error("CheckBlock() : proof of work failed"));
 
     // Check timestamp
     if (GetBlockTime() > FutureDrift(GetAdjustedTime()))
@@ -2691,8 +2673,8 @@ bool ProcessBlock(CValidationState &state, CNode* pfrom, CBlock* pblock, CDiskBl
         else
             bnRequired.SetCompact(ComputeMinWork(GetLastBlockIndex(pcheckpoint, false)->nBits, deltaTime));
 
-        if (pblock->GetBlockTime() > CHECK_POW_FROM_NTIME && bnNewBlock > bnRequired)
-            return state.DoS(100, error("ProcessBlock() : block with too little proof-of-%s", pblock->IsProofOfStake()? "stake" : "work"));
+        //if (pblock->GetBlockTime() > CHECK_POW_FROM_NTIME && bnNewBlock > bnRequired)
+            //return state.DoS(100, error("ProcessBlock() : block with too little proof-of-%s", pblock->IsProofOfStake()? "stake" : "work"));
     }
 
     // ppcoin: ask for pending sync-checkpoint if any
@@ -3303,7 +3285,7 @@ bool InitBlockIndex() {
         //   vMerkleTree: 97ddfbbae6
 
         // Genesis block
-        const char* pszTimestamp = "January 21st 2014 was such a nice day...";
+        const char* pszTimestamp = "Ahmed Rocks";
         CTransaction txNew;
         txNew.nVersion = 1;
         txNew.nTime = 1390280400;
@@ -3319,7 +3301,7 @@ bool InitBlockIndex() {
         block.nVersion = 1;
         block.nTime = 1390280400;
         block.nBits = 0x1e0ffff0;
-        block.nNonce = 222583475;
+        block.nNonce = 222792466;
 
         if (fTestNet)
         {
@@ -3332,7 +3314,7 @@ bool InitBlockIndex() {
         printf("%s\n", hash.ToString().c_str());
         printf("%s\n", hashGenesisBlock.ToString().c_str());
         printf("%s\n", block.hashMerkleRoot.ToString().c_str());
-        assert(block.hashMerkleRoot == uint256("0xb502bc1dc42b07092b9187e92f70e32f9a53247feae16d821bebffa916af79ff"));
+        assert(block.hashMerkleRoot == uint256("0xbc26943e881133657b577b6de4994af2dd68f529ab698437db49ead0eda0fad4"));
         block.print();
         assert(hash == hashGenesisBlock);
 

@@ -1480,7 +1480,7 @@ bool CWallet::GetStakeWeight(const CKeyStore& keystore, uint64& nAverageWeight, 
     set<pair<const CWalletTx*,unsigned int> > setCoins;
     int64 nValueIn = 0;
 
-    if (!SelectCoinsSimple(nBalance - nReserveBalance, GetTime(), COINBASE_MATURITY + 20, setCoins, nValueIn))
+    if (!SelectCoinsSimple(nBalance - nReserveBalance, GetTime(), COINBASE_MATURITY, setCoins, nValueIn))
         return false;
 
     if (setCoins.empty())
@@ -1504,7 +1504,7 @@ bool CWallet::GetStakeWeight(const CKeyStore& keystore, uint64& nAverageWeight, 
         // Deal with transaction timestmap
         unsigned int nTimeTx = tx.nTime ? tx.nTime : mapBlockIndex[hashBlock]->nTime;
 
-        int64 nTimeWeight = GetCoinAgeWeight((int64)nTimeTx, (int64)GetTime());
+        int64 nTimeWeight = GetWeight((int64)nTimeTx, (int64)GetTime());
         CBigNum bnCoinDayWeight = CBigNum(pcoin.first->vout[pcoin.second].nValue) * nTimeWeight / COIN / (24 * 60 * 60);
 
         // Weight is greater than zero
@@ -1647,8 +1647,9 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
                 vwtxPrev.push_back(pcoin.first);
                 txNew.vout.push_back(CTxOut(0, scriptPubKeyOut));
 
-                if (GetCoinAgeWeight(block.GetBlockTime(), (int64)txNew.nTime) < nStakeSplitAge && nCredit >= nStakeCombineThreshold)
-                    txNew.vout.push_back(CTxOut(0, scriptPubKeyOut)); //split stake
+		// TODO: fix this
+                //if (GetCoinAgeWeight(block.GetBlockTime(), (int64)txNew.nTime) < nStakeSplitAge && nCredit >= nStakeCombineThreshold)
+                //    txNew.vout.push_back(CTxOut(0, scriptPubKeyOut)); //split stake
                 if (fDebug && GetBoolArg("-printcoinstake"))
                     printf("CreateCoinStake : added kernel type=%d\n", whichType);
                 fKernelFound = true;
@@ -1697,7 +1698,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
             unsigned int nTimeTx = tx.nTime ? tx.nTime : mapBlockIndex[hashBlock]->nTime;
 
             // Do not add input that is still too young
-            if (!GetCoinAgeWeight((int64)nTimeTx, (int64)txNew.nTime))
+            if (!GetWeight((int64)nTimeTx, (int64)txNew.nTime))
                 continue;
 
             txNew.vin.push_back(CTxIn(pcoin.first->GetHash(), pcoin.second));

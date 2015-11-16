@@ -7,6 +7,8 @@
 
 #include "main.h"
 
+using namespace std;
+
 // MODIFIER_INTERVAL: time to elapse before new modifier is computed
 extern unsigned int nModifierInterval;
 
@@ -35,6 +37,15 @@ unsigned int GetStakeModifierChecksum(const CBlockIndex* pindex);
 bool CheckStakeModifierCheckpoints(int nHeight, uint64 nStakeModifierChecksum);
 
 // Get time weight using supplied timestamps
-int64 GetCoinAgeWeight(int64 nIntervalBeginning, int64 nIntervalEnd);
+inline int64 GetWeight(int64_t nIntervalBeginning, int64_t nIntervalEnd)
+{
+    // Kernel hash weight starts from 0 at the 30-day min age
+    // this change increases active coins participating the hash and helps
+    // to secure the network when proof-of-stake difficulty is low
+    //
+    // Maximum TimeWeight is 90 days.
+
+    return min(nIntervalEnd - nIntervalBeginning - nStakeMinAge, (int64_t)nStakeMaxAge);
+}
 
 #endif // PPCOIN_KERNEL_H

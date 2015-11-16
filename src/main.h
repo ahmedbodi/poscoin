@@ -28,6 +28,10 @@ class CNode;
 
 struct CBlockIndexWorkComparator;
 
+static const int STAKE_TARGET_SPACING = 10 * 60; // 10-minute block spacing 
+static const int STAKE_MIN_AGE = 60 * 60 * 24 * 30; // minimum age for coin age
+static const int STAKE_MAX_AGE = 60 * 60 * 24 * 90; // stake age of full weight
+
 /** The maximum allowed size for a serialized block, in bytes (network rule) */
 static const unsigned int MAX_BLOCK_SIZE = 1000000;                      // 1000KB block hard limit
 /** Obsolete: maximum size for mined blocks */
@@ -57,16 +61,18 @@ static const int64 DUST_SOFT_LIMIT = 100000000; // 1 RDD
 /** Dust Hard Limit, ignored as wallet inputs (mininput default) */
 static const int64 DUST_HARD_LIMIT = 1000000;   // 0.01 RDD mininput
 /** No amount larger than this (in satoshi) is valid */
-static const int64 MAX_MONEY = 92233720368 * COIN; // Maximum or compile warning, will fix in future release.
+static const int64 MAX_MONEY = 2000000 * COIN; // Maximum or compile warning, will fix in future release.
 inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 /** Coinbase transaction outputs can only be spent after this number of new blocks (network rule) */
-static const int COINBASE_MATURITY = 30;
+static const int COINBASE_MATURITY = 3;
 /** Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp. */
 static const unsigned int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
 /** Maximum number of script-checking threads allowed */
 static const int MAX_SCRIPTCHECK_THREADS = 16;
+
 /** Start checking POW after block 44877 http://cryptexplorer.com/block/4253e7618d40aded00d11b664e874245ae74d55b976f4ac087d1a9db2f5f3cda */
 static const int64 CHECK_POW_FROM_NTIME = 1394048078;
+
 #ifdef USE_UPNP
 static const int fHaveUPnP = true;
 #else
@@ -74,11 +80,11 @@ static const int fHaveUPnP = false;
 #endif
 
 // ppcoin
-inline int64 PastDrift(int64 nTime)   { return nTime - 2 * 60 * 60; } // up to 2 hours from the past
-inline int64 FutureDrift(int64 nTime) { return nTime + 2 * 60 * 60; } // up to 2 hours from the future
+inline int64 PastDrift(int64 nTime)   { return nTime - 1 * 60 * 60; } // up to 2 hours from the past
+inline int64 FutureDrift(int64 nTime) { return nTime + 1 * 60 * 60; } // up to 2 hours from the future
 
 // Reddcoin PoSV
-static const int LAST_POW_BLOCK = 260800 - 1;
+static const int LAST_POW_BLOCK = 20;
 static const int64 COIN_YEAR_REWARD = 5 * CENT; // 5% per year
 
 extern CScript COINBASE_FLAGS;
