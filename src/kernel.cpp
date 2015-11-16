@@ -17,7 +17,7 @@ typedef std::map<int, uint64> MapModifierCheckpoints;
 // This leads to a modifier selection interval of 27489 seconds,
 // which is roughly 7 hours 38 minutes, just a bit shorter than
 // the minimum stake age of 8 hours.
-unsigned int nModifierInterval = 6 * 60 * 60;
+unsigned int nModifierInterval = 20 ;
 
 // Hard checkpoints of stake modifiers to ensure they are deterministic
 static std::map<int, uint64> mapStakeModifierCheckpoints =

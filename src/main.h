@@ -28,9 +28,9 @@ class CNode;
 
 struct CBlockIndexWorkComparator;
 
-static const int STAKE_TARGET_SPACING = 10 * 60; // 10-minute block spacing 
-static const int STAKE_MIN_AGE = 60 * 60 * 24 * 30; // minimum age for coin age
-static const int STAKE_MAX_AGE = 60 * 60 * 24 * 90; // stake age of full weight
+static const int STAKE_TARGET_SPACING = 60; // 10-minute block spacing 
+static const int STAKE_MIN_AGE = 10; // minimum age for coin age
+static const int STAKE_MAX_AGE = -10; // stake age of full weight
 
 /** The maximum allowed size for a serialized block, in bytes (network rule) */
 static const unsigned int MAX_BLOCK_SIZE = 1000000;                      // 1000KB block hard limit
